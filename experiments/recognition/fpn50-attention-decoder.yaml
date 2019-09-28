@@ -1,0 +1,65 @@
+import:
+    - 'experiments/base.yaml'
+    - 'experiments/recognition/community-base.yaml'
+package:
+    - 'structure.visualizers.sequence_recognition_visualizer'
+    - 'concern.charsets'
+define:
+  - name: BasicStructure
+    class: Structure
+    builder: 
+        class: Builder
+        model: SequenceRecognitionModel
+        model_args:
+            backbone: Resnet50FPN
+            decoder: AttentionDecoder
+            decoder_args:
+                in_channels: 256
+                charset: ^charset
+    representer:  
+        class: SequenceRecognitionRepresenter
+        charset: ^charset
+    measurer:  
+        class: SequenceRecognitionMeasurer
+
+  - name: 'Experiment'
+    class: Experiment
+    structure: ^BasicStructure
+
+    train: 
+        class: TrainSettings
+        trainer_name: 'SequenceRecognizer'
+        data_loader: ^train_data
+        checkpoint: 
+            class: Checkpoint
+            start_epoch: 0
+            start_iter: 0
+            resume: null
+        model_saver: 
+            class: ModelSaver
+            dir_path: "./model"
+            save_interval: 8000
+            signal_path: null
+        scheduler: 
+            class: OptimizerScheduler
+            optimizer: "Adam"
+            learning_rate: 
+                class: MultiStepLR
+                milestones: [3, 4, 5]
+                gamma: 0.1
+                lr: 0.001
+        epochs: 5
+
+    validation: &validate
+      class: ValidationSettings
+      data_loaders:
+        iiit:  ^iiit
+      interval: 8000
+      exempt: 0
+    evaluation: *validate
+
+    logger: 
+        class: Logger
+        verbose: true
+        level: "info"
+        log_interval: 200

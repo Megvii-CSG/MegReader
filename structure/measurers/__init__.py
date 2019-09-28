@@ -1,0 +1,6 @@
+from .textsnake import TextsnakeMeasurer
+from .classification_measurer import ClassificationMeasurer
+from .sequence_recognition_measurer import SequenceRecognitionMeasurer
+from .icdar_detection_measurer import ICDARDetectionMeasurer
+from .quad_measurer import QuadMeasurer
+from .grid_sampling_measurer import GridSamplingMeasurer

@@ -1,0 +1,7 @@
+from .textsnake import TextsnakeRepresenter
+from .sequence_recognition_representer import SequenceRecognitionRepresenter
+from .classification_representer import ClassificationRepresenter
+from .ctc_representer import CTCRepresenter
+from .ctc_representer2d import CTCRepresenter2D
+from .seg_recognition_representer import SegRecognitionRepresenter
+from .integral_regression_representer import IntegralRegressionRepresenter

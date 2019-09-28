@@ -1,0 +1,4 @@
+from .textsnake import TextsnakeVisualizer
+from .seg_recognition_visualizer import SegRecognitionVisualizer
+from .ctc_visualizer2d import CTCVisualizer2D
+# from .sequence_recognition_visualizer import SequenceRecognitionVisualizer

@@ -1,0 +1,9 @@
+import: []
+package:
+    - 'experiment'
+    - 'structure.model'
+    - 'training.learning_rate'
+    - 'data'
+    - 'data.nori_dataset'
+    - 'data.processes'
+define: []

@@ -1,0 +1,104 @@
+import:
+    - 'experiments/base.yaml'
+    - 'experiments/recognition/community-base.yaml'
+package:
+    - 'structure.visualizers.sequence_recognition_visualizer'
+    - 'concern.charsets'
+define:
+  - name: train_data
+    class: DataLoader
+    dataset: 
+        class: FileDataset
+        file_paths:
+            - '/data/text-spotter-data/syth90k/'
+            - '/data/text-spotter-data/synth-text/cropped/'
+        meta_loader: ^meta_loader
+        processes:
+          - class: MakeRecognitionLabel
+          - class: ResizeImage
+            image_size: [32, 128]
+            mode: resize
+          - class: NormalizeImage
+          - class: FilterKeys
+            required: ['image', 'label', 'length']
+    batch_size: 256
+
+  - name: iiit
+    class: DataLoader
+    dataset: 
+        class: FileDataset
+        file_paths: ["/data/text-spotter-data/test/iiit/"]
+        max_size: 32
+        num_workers: 16
+        meta_loader: ^meta_loader
+        charset: ^charset
+        processes:
+            - class: MakeRecognitionLabel
+            - class: ResizeImage
+              image_size: [32, 128]
+              mode: resize
+            - class: NormalizeImage
+            - class: FilterKeys
+              required: ['image', 'label']
+    batch_size: 16
+
+  - name: BasicStructure
+    class: Structure
+    builder: 
+        class: Builder
+        model: SequenceRecognitionModel
+        model_args:
+            backbone: crnn_backbone
+            decoder: CRNNDecoder
+            decoder_args:
+              in_channels: 512
+              inner_channels: 256
+              need_reduce: False
+              charset: ^charset
+    representer:  
+        class: CTCRepresenter
+        charset: ^charset
+    measurer:  
+        class: SequenceRecognitionMeasurer
+
+  - name: 'Experiment'
+    class: Experiment
+    structure: ^BasicStructure
+
+    train: 
+        class: TrainSettings
+        trainer_name: 'SequenceRecognizer'
+        data_loader: ^train_data
+        checkpoint: 
+            class: Checkpoint
+            start_epoch: 0
+            start_iter: 0
+            resume: null
+        model_saver: 
+            class: ModelSaver
+            dir_path: "./model"
+            save_interval: 8000
+            signal_path: null
+        scheduler: 
+            class: OptimizerScheduler
+            optimizer: "Adam"
+            learning_rate: 
+                class: MultiStepLR
+                milestones: [3, 4, 5]
+                gamma: 0.1
+                lr: 0.001
+        epochs: 5
+
+    validation: &validate
+      class: ValidationSettings
+      data_loaders:
+        iiit:  ^iiit
+      interval: 8000
+      exempt: -1
+    evaluation: *validate
+
+    logger: 
+        class: Logger
+        verbose: true
+        level: "info"
+        log_interval: 200

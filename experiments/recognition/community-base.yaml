@@ -1,0 +1,58 @@
+package: # Packages will be automatically imported
+    - 'data.data_loader'
+    - 'data.file_dataset'
+    - 'data.meta_loader'
+    - 'data.processes'
+    - 'concern.charsets'
+    - 'data.unpack_msgpack_data'
+
+define:
+  # Charsts are defined in concern/charsets.py
+  - name: charset
+    class: EnglishCharset
+    case_sensitive: false
+
+  # Metaloaders are defined in data/meta_loaders/meta_loader.py
+  - name: meta_loader
+    class: RecognitionMetaLoader
+    cache:
+        class: FileMetaCache
+    force_reload: false
+
+  # Training data for recognition experiments.
+  - name: train_data
+    class: DataLoader
+    dataset: 
+        class: FileDataset
+        file_paths:
+            - '/data/text-spotter-data/syth90k/'
+            - '/data/text-spotter-data/synth-text/cropped/'
+        meta_loader: ^meta_loader
+        processes:
+          - class: MakeRecognitionLabel
+          - class: ResizeImage
+            image_size: [64, 256]
+            mode: resize
+          - class: NormalizeImage
+          - class: FilterKeys
+            required: ['image', 'label', 'length']
+    batch_size: 256
+
+  - name: iiit
+    class: DataLoader
+    dataset: 
+        class: FileDataset
+        file_paths: ["/data/text-spotter-data/test/iiit/"]
+        max_size: 32
+        num_workers: 16
+        meta_loader: ^meta_loader
+        charset: ^charset
+        processes:
+            - class: MakeRecognitionLabel
+            - class: ResizeImage
+              image_size: [64, 256]
+              mode: resize
+            - class: NormalizeImage
+            - class: FilterKeys
+              required: ['image', 'label']
+    batch_size: 16
