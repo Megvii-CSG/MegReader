@@ -6,7 +6,9 @@ from fire import Fire
 
 
 
-def main(nori_path, lmdb_path='/data/text-spotter-data/synthtext'):
+def main(nori_path, lmdb_path=None):
+    if lmdb_path is None:
+        lmdb_path = nori_path
     env = lmdb.Environment(lmdb_path, map_size=int(5e10), writemap=True, max_dbs=2, lock=False)
     fetcher = nori.Fetcher(nori_path)
     db_extra = env.open_db('extra'.encode(), create=True)
@@ -16,7 +18,6 @@ def main(nori_path, lmdb_path='/data/text-spotter-data/synthtext'):
             for data_id, data, meta in tqdm(nr.scan()):
                 value = {}
                 image = fetcher.get(data_id)
-                #value['image'] = image
                 value['extra'] = {}
                 for key in meta['extra']:
                     value['extra'][key] = meta['extra'][key]
