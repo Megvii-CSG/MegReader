@@ -3,23 +3,22 @@ import cv2
 import numpy as np
 import pickle
 import lmdb
-
 from .dataset import Dataset
 from concern.config import Configurable, State
 from concern.distributed import is_main
-import pdb
+
 
 class LMDBDataset(Dataset, Configurable):
-    r'''Dataset reading from nori.
+    r'''Dataset reading from lmdb.
     Args:
-        nori_paths: Pattern or list, required, the noris containing data,
-            e.g. `the/path/*.nori`, `['a.nori', 'b.nori']`
+        lmdb_paths: Pattern or list, required, the path of `data.mdb`,
+        must be end with `/`
+            e.g. `the/path/`, `['the/path/a/', 'the/path/b/']`
     '''
     lmdb_paths = State()
 
     def __init__(self, lmdb_paths=None, cmd={}, **kwargs):
         self.load_all(**kwargs)
-
         self.lmdb_paths = self.list_or_pattern(lmdb_paths) or self.lmdb_paths
         self.debug = cmd.get('debug', False)
         self.envs = []
@@ -46,7 +45,7 @@ class LMDBDataset(Dataset, Configurable):
             return functools.reduce(add, [self.prepare_meta(path) for path in path_or_list])
 
         assert type(path_or_list) == str, path_or_list
-        
+
         return self.prepare_meta_single(path_or_list)
 
     def prepare_meta_single(self, path_name):
@@ -65,7 +64,7 @@ class LMDBDataset(Dataset, Configurable):
         if self.debug:
             self.data_ids = self.data_ids[:32]
         self.num_samples = len(self.data_ids)
-        
+
         # prepare lmdb environments
         for path in self.lmdb_paths:
             env = lmdb.open(path, max_dbs=1, lock=False)
@@ -76,14 +75,12 @@ class LMDBDataset(Dataset, Configurable):
         if is_main():
             print(self.num_samples, 'images found')
         return self
-    
+
     def searchImage(self, data_id, path):
         maybeImage = self.txns[path].get(data_id)
-        assert maybeImage is not None, 'image %s not found as %s' % (data_id, path)
+        assert maybeImage is not None, 'image %s not found as %s' % (
+            data_id, path)
         return maybeImage
-        
-            
-
 
     def default_unpack(self, data_id, meta):
         data = self.searchImage(data_id, meta['db_path'])

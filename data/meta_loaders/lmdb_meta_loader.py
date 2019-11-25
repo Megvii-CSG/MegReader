@@ -7,29 +7,23 @@ from concern.config import Configurable, State
 class LMDBMetaLoader(Configurable):
     cache = State()
     force_reload = State(default=False)
-
-    scan_meta = True
-    scan_data = False
     post_prosess = None
-
-
 
     def __init__(self, force_reload=None, cmd={}, **kwargs):
         self.load_all(cmd=cmd, **kwargs)
         self.force_reload = cmd.get('force_reload', self.force_reload)
-        
+
         # lmdb environments
         self.envs = {}
-        self.txns  = {}
+        self.txns = {}
         if force_reload is not None:
             self.force_reload = force_reload
-    
+
     def __del__(self):
         for path in self.envs:
             envs[path].close()
 
     def load_meta(self, lmdb_path):
-        
         if not self.force_reload and self.cache is not None:
             print(lmdb_path)
             meta = self.cache.read(lmdb_path)
@@ -55,7 +49,7 @@ class LMDBMetaLoader(Configurable):
             if valid_count % 100000 == 0:
                 print("%d instances processd" % valid_count)
             for key in meta_instance:
-                    meta_info[key].append(meta_instance[key])
+                meta_info[key].append(meta_instance[key])
 
         print(valid_count, 'instances found')
         if self.post_prosess is not None:
