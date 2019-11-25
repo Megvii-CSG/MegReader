@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import pickle
 import lmdb
+import os
 from .dataset import Dataset
 from concern.config import Configurable, State
 from concern.distributed import is_main
@@ -12,7 +13,6 @@ class LMDBDataset(Dataset, Configurable):
     r'''Dataset reading from lmdb.
     Args:
         lmdb_paths: Pattern or list, required, the path of `data.mdb`,
-        must be end with `/`
             e.g. `the/path/`, `['the/path/a/', 'the/path/b/']`
     '''
     lmdb_paths = State()
@@ -67,6 +67,7 @@ class LMDBDataset(Dataset, Configurable):
 
         # prepare lmdb environments
         for path in self.lmdb_paths:
+            path = os.path.join(path, '')
             env = lmdb.open(path, max_dbs=1, lock=False)
             db_image = env.open_db('image'.encode())
             self.envs.append(env)
