@@ -31,7 +31,6 @@ class LMDBMetaLoader(Configurable):
                 return meta
         meta_info = defaultdict(list)
         valid_count = 0
-
         if lmdb_path not in self.envs:
             env = lmdb.open(lmdb_path, max_dbs=1, lock=False)
             self.envs[lmdb_path] = env
@@ -41,6 +40,7 @@ class LMDBMetaLoader(Configurable):
         txn = self.txns[lmdb_path]
         cursor = txn.cursor()
         for data_id, value in cursor:
+            value = pickle.loads(value)
             meta_instance = self.parse_meta(data_id, value)
             if meta_instance is None:
                 continue
@@ -64,4 +64,4 @@ class LMDBMetaLoader(Configurable):
         raise NotImplementedError
 
     def get_annotation(self, meta):
-        return pickle.loads(meta)['extra']
+        return meta['extra']
