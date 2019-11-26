@@ -50,7 +50,12 @@ class FileMetaCache(MetaCache):
 
     def storate_path(self, nori_path):
         if self.inplace:
-            return os.path.join(
+            if config.will_use_lmdb:
+                return os.path.join(
+                    nori_path,
+                    'meta_cache-%s.pickle' % self.client)
+            else:
+                return os.path.join(
                     os.path.dirname(nori_path),
                     'meta_cache-%s.pickle' % self.client)
         return os.path.join(self.storage_dir, self.hash(nori_path) + '.pickle')

@@ -1,30 +1,35 @@
 import functools
 import cv2
 import numpy as np
-
+import pickle
+import lmdb
+import os
 from .dataset import Dataset
 from concern.config import Configurable, State
-from concern.nori_reader import NoriReader
 from concern.distributed import is_main
 
 
-class NoriDataset(Dataset, Configurable):
-    r'''Dataset reading from nori.
+class LMDBDataset(Dataset, Configurable):
+    r'''Dataset reading from lmdb.
     Args:
-        nori_paths: Pattern or list, required, the noris containing data,
-            e.g. `the/path/*.nori`, `['a.nori', 'b.nori']`
+        lmdb_paths: Pattern or list, required, the path of `data.mdb`,
+            e.g. `the/path/`, `['the/path/a/', 'the/path/b/']`
     '''
-    nori_paths = State()
+    lmdb_paths = State()
 
-    def __init__(self, nori_paths=None, cmd={}, **kwargs):
+    def __init__(self, lmdb_paths=None, cmd={}, **kwargs):
         self.load_all(**kwargs)
-
-        self.nori_paths = self.list_or_pattern(nori_paths) or self.nori_paths
+        self.lmdb_paths = self.list_or_pattern(lmdb_paths) or self.lmdb_paths
         self.debug = cmd.get('debug', False)
-
+        self.envs = []
+        self.txns = {}
         self.prepare()
         self.truncated = False
         self.data = None
+
+    def __del__(self):
+        for env in self.envs:
+            env.close()
 
     def prepare_meta(self, path_or_list):
         def add(a_dict: dict, another_dict: dict):
@@ -40,14 +45,14 @@ class NoriDataset(Dataset, Configurable):
             return functools.reduce(add, [self.prepare_meta(path) for path in path_or_list])
 
         assert type(path_or_list) == str, path_or_list
-        assert path_or_list.endswith('.nori') or path_or_list.endswith('.nori/')
+
         return self.prepare_meta_single(path_or_list)
 
     def prepare_meta_single(self, path_name):
         return self.meta_loader.load_meta(path_name)
 
     def prepare(self):
-        self.meta = self.prepare_meta(self.nori_paths)
+        self.meta = self.prepare_meta(self.lmdb_paths)
         if self.unpack is None:
             self.unpack = self.default_unpack
 
@@ -59,14 +64,27 @@ class NoriDataset(Dataset, Configurable):
         if self.debug:
             self.data_ids = self.data_ids[:32]
         self.num_samples = len(self.data_ids)
+
+        # prepare lmdb environments
+        for path in self.lmdb_paths:
+            path = os.path.join(path, '')
+            env = lmdb.open(path, max_dbs=1, lock=False)
+            db_image = env.open_db('image'.encode())
+            self.envs.append(env)
+            self.txns[path] = env.begin(db=db_image)
+
         if is_main():
             print(self.num_samples, 'images found')
         return self
 
+    def search_image(self, data_id, path):
+        maybe_image = self.txns[path].get(data_id)
+        assert maybe_image is not None, 'image %s not found at %s' % (
+            data_id, path)
+        return maybe_image
+
     def default_unpack(self, data_id, meta):
-        if self.fetcher is None:
-            self.fetcher = NoriReader(self.nori_paths)
-        data = self.fetcher.get(data_id)
+        data = self.search_image(data_id, meta['db_path'])
         image = np.fromstring(data, dtype=np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR).astype('float32')
         meta['image'] = image
