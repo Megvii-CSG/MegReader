@@ -49,7 +49,7 @@ class NoriDataset(Dataset, Configurable):
     def prepare(self):
         self.meta = self.prepare_meta(self.nori_paths)
         if self.unpack is None:
-            self.unpack = self.defulat_unpack
+            self.unpack = self.default_unpack
 
             # The fetcher is supposed to be initialized in the
             # sub-processes, or it will cause CRC Error.
@@ -63,7 +63,7 @@ class NoriDataset(Dataset, Configurable):
             print(self.num_samples, 'images found')
         return self
 
-    def defulat_unpack(self, data_id, meta):
+    def default_unpack(self, data_id, meta):
         if self.fetcher is None:
             self.fetcher = NoriReader(self.nori_paths)
         data = self.fetcher.get(data_id)

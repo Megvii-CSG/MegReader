@@ -28,7 +28,7 @@ class FileDataset(Dataset, Configurable):
         self.meta = self.prepare_meta(self.file_paths)
 
         if self.unpack is None:
-            self.unpack = self.defulat_unpack
+            self.unpack = self.default_unpack
 
         self.data_ids = self.meta.get('data_ids', self.meta.get('data_id', []))
         if self.debug:
@@ -52,7 +52,7 @@ class FileDataset(Dataset, Configurable):
 
         return self.prepare_meta_single(path_or_list)
 
-    def defulat_unpack(self, data_id, meta):
+    def default_unpack(self, data_id, meta):
         image = cv2.imread(data_id, cv2.IMREAD_COLOR).astype('float32')
         meta['image'] = image
         return meta

@@ -77,14 +77,14 @@ class LMDBDataset(Dataset, Configurable):
             print(self.num_samples, 'images found')
         return self
 
-    def searchImage(self, data_id, path):
-        maybeImage = self.txns[path].get(data_id)
-        assert maybeImage is not None, 'image %s not found as %s' % (
+    def search_image(self, data_id, path):
+        maybe_image = self.txns[path].get(data_id)
+        assert maybe_image is not None, 'image %s not found at %s' % (
             data_id, path)
-        return maybeImage
+        return maybe_image
 
     def default_unpack(self, data_id, meta):
-        data = self.searchImage(data_id, meta['db_path'])
+        data = self.search_image(data_id, meta['db_path'])
         image = np.fromstring(data, dtype=np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR).astype('float32')
         meta['image'] = image
