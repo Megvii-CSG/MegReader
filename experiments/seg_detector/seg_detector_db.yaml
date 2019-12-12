@@ -1,0 +1,117 @@
+import:
+    - 'experiments/seg_detector/community-base.yaml'
+package: []
+define:
+  - name: train_data
+    class: LMDBDataset
+    meta_loader: ^id_meta_loader
+    lmdb_paths:
+        - '/data/text-spotter-data/MLT-2017/train'
+    unpack:
+        class: TransformMsgpackData
+    processes:
+        - class: AugmentDetectionData
+          augmenter_args:
+              - ['Fliplr', 0.5]
+              - {'cls': 'Affine', 'rotate': [-10, 10]}
+              - ['Resize', [0.5, 3.0]]
+        - class: RandomCropData
+          size: [640, 640]
+          max_tries: 10
+        - class: MakeICDARData
+        - class: MakeSegDetectionData
+        - class: MakeBorderMap
+        - class: NormalizeImage
+        - class: FilterKeys
+          superfluous: ['polygons', 'filename', 'shape', 'ignore_tags']
+
+  - name: validate_data
+    class: LMDBDataset
+    lmdb_paths:
+        - '/data/text-spotter-data/MLT-2017/validate'
+    meta_loader: ^id_meta_loader
+    unpack:
+        class: TransformMsgpackData
+    processes:
+        - class: AugmentDetectionData
+          augmenter_args:
+              - ['Resize', {'width': 1024, 'height': 576}]
+        - class: MakeICDARData
+        - class: MakeSegDetectionData
+        - class: MakeBorderMap
+        - class: NormalizeImage
+
+
+  - name: 'Experiment'
+    class: Experiment
+    structure: 
+        class: Structure
+        builder: 
+            class: Builder
+            model: SegDetectorModel
+            model_args:
+                backbone: deformable_resnet50
+                decoder: SegDetector
+                decoder_args: 
+                    adaptive: True
+                    in_channels: [256, 512, 1024, 2048]
+                    k: 50
+                loss_class: L1BalanceCELoss
+
+        representer:
+            class: SegDetectorRepresenter
+            max_candidates: 1000
+        measurer:  
+            class: QuadMeasurer
+        visualizer:  
+            class: SegDetectorVisualizer
+    train: 
+        class: TrainSettings
+        data_loader: 
+            class: DataLoader
+            dataset: ^train_data
+            batch_size: 16
+            num_workers: 8
+        checkpoint: 
+            class: Checkpoint
+            start_epoch: 0
+            start_iter: 0
+            resume: null
+        model_saver: 
+            class: ModelSaver
+            dir_path: model
+            save_interval: 1800
+            signal_path: save
+        scheduler: 
+            class: OptimizerScheduler
+            optimizer: "SGD"
+            optimizer_args:
+                lr: 0.007
+                momentum: 0.9
+                weight_decay: 0.0001
+            learning_rate:  
+                class: DecayLearningRate
+                epochs: 400
+        epochs: 400
+
+    validation: &validate
+        class: ValidationSettings
+        data_loaders:
+            MLT-17: 
+                class: DataLoader
+                dataset: ^validate_data
+                batch_size: 4
+                num_workers: 8
+                collect_fn:
+                    class: ICDARCollectFN
+        visualize: false
+        interval: 1800
+        exempt: -1
+
+    logger:
+        class: Logger
+        verbose: true
+        level: info
+        log_interval: 450
+
+    evaluation: *validate
