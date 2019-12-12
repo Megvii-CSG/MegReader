@@ -55,7 +55,13 @@ class LMDBDataset(Dataset, Configurable):
         self.meta = self.prepare_meta(self.lmdb_paths)
         if self.unpack is None:
             self.unpack = self.default_unpack
-
+            # prepare lmdb environments
+            for path in self.lmdb_paths:
+                path = os.path.join(path, '')
+                env = lmdb.open(path, max_dbs=1, lock=False)
+                db_image = env.open_db('image'.encode())
+                self.envs.append(env)
+                self.txns[path] = env.begin(db=db_image)
             # The fetcher is supposed to be initialized in the
             # sub-processes, or it will cause CRC Error.
             self.fetcher = None
@@ -64,14 +70,6 @@ class LMDBDataset(Dataset, Configurable):
         if self.debug:
             self.data_ids = self.data_ids[:32]
         self.num_samples = len(self.data_ids)
-
-        # prepare lmdb environments
-        for path in self.lmdb_paths:
-            path = os.path.join(path, '')
-            env = lmdb.open(path, max_dbs=1, lock=False)
-            db_image = env.open_db('image'.encode())
-            self.envs.append(env)
-            self.txns[path] = env.begin(db=db_image)
 
         if is_main():
             print(self.num_samples, 'images found')

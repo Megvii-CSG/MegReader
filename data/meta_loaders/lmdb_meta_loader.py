@@ -2,6 +2,8 @@ import lmdb
 import pickle
 from collections import defaultdict
 from concern.config import Configurable, State
+import time
+import os
 
 
 class LMDBMetaLoader(Configurable):
@@ -21,11 +23,11 @@ class LMDBMetaLoader(Configurable):
 
     def __del__(self):
         for path in self.envs:
-            envs[path].close()
+            self.envs[path].close()
 
     def load_meta(self, lmdb_path):
+        lmdb_path = os.path.join(lmdb_path, '')
         if not self.force_reload and self.cache is not None:
-            print(lmdb_path)
             meta = self.cache.read(lmdb_path)
             if meta is not None:
                 return meta
@@ -40,8 +42,10 @@ class LMDBMetaLoader(Configurable):
         txn = self.txns[lmdb_path]
         cursor = txn.cursor()
         for data_id, value in cursor:
-            value = pickle.loads(value)
-            meta_instance = self.parse_meta(data_id, value)
+            args_tuple = (data_id, )
+            if self.scan_meta:
+                args_tuple = tuple((*args_tuple, pickle.loads(value)))
+            meta_instance = self.parse_meta(*args_tuple)
             if meta_instance is None:
                 continue
             meta_instance['db_path'] = lmdb_path
