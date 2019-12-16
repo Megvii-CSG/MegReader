@@ -7,7 +7,6 @@ from tqdm import tqdm
 from experiment import Experiment
 from data.data_loader import DistributedSampler
 from concern.distributed import reduce, gather
-from concern.average_meter import AverageMeter
 
 
 class Trainer:
@@ -173,12 +172,14 @@ class Trainer:
         vis_images = dict()
         for _, batch in tqdm(enumerate(data_loader), total=len(data_loader)):
             pred = model.forward(batch, training=False)
+
             # The post-processing and evaluation are performed in the rank-0 process.
             if dist.is_available() and dist.is_initialized():
                 pred = gather(pred)
                 batch = gather(batch)
             if not self.is_main:
                 continue
+            
             output = self.structure.representer.represent(batch, pred)
             raw_metric, interested = self.structure.measurer.validate_measure(
                 batch, output)
