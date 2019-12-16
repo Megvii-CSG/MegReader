@@ -56,7 +56,6 @@ def do_dict(function, value):
     new_dict = dict()
     for key, item in value.items():
         if isinstance(item, list):
-            #item=[]
             print('key %s len %d value %s' % (key, len(item), item))
             item = do_list(function, item)
             print('key %s value finished %s' % (key, item))
