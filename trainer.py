@@ -179,7 +179,7 @@ class Trainer:
                 batch = gather(batch)
             if not self.is_main:
                 continue
-            
+
             output = self.structure.representer.represent(batch, pred)
             raw_metric, interested = self.structure.measurer.validate_measure(
                 batch, output)
@@ -191,7 +191,6 @@ class Trainer:
                 vis_images.update(vis_image)
         metrics = self.structure.measurer.gather_measure(
             raw_metrics, self.logger)
-
         return metrics, vis_images
 
     def to_np(self, x):
