@@ -41,8 +41,10 @@ Edit configurations in `config.py`.
 See detailed options: `python3 train.py --help`
 
 ## Datasets
-We provide data loading implementation with annotation packed with json for quick start.
-Datasets used in our recognition experiments can be downloaded from [onedrive](https://megvii-my.sharepoint.cn/:f:/g/personal/wanzhaoyi_megvii_com/EjkcrpmiW6hJrUKY-0fEBRABvNMtYniUPfWLVptMmy9-6w?e=bJaYFo).
+We provide data loading implementation with annotation packed with json for quick start. 
+Also, lmdb format data are now available too.
+You can refer the usage in [demo](experiments/recognition/crnn-lmdb.yaml).
+Datasets used in our recognition experiments can be downloaded from [onedrive](https://megvii-my.sharepoint.cn/:f:/g/personal/wanzhaoyi_megvii_com/EjkcrpmiW6hJrUKY-0fEBRABvNMtYniUPfWLVptMmy9-6w?e=bJaYFo). The transform [script](scripts/json_to_lmdb.py) are provide to convert json format data to lmdb.
 
 ### Non-distributed
 

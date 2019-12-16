@@ -4,6 +4,9 @@ import cv2
 import numpy as np
 import nori2 as nori
 import msgpack
+import config
+import os
+import lmdb
 from PIL import Image
 
 from concern.config import Configurable, State
@@ -14,7 +17,11 @@ class UnpackMsgpackData(Configurable):
 
     def __init__(self, cmd={}, **kwargs):
         self.load_all(**kwargs)
-        self.fetcher = nori.Fetcher()
+        if config.will_use_nori:
+            self.fetcher = nori.Fetcher()
+        elif config.will_use_lmdb:
+            self.envs = []
+            self.txns = {}
         if 'mode' in cmd:
             self.mode = cmd['mode']
 
@@ -61,8 +68,25 @@ class TransformMsgpackData(UnpackMsgpackData):
         print('transform')
         self.meta_loader = cmd.get('meta_loader', self.meta_loader)
 
+    def get_item(self, data_id, meta):
+        if config.will_use_nori:
+            item = self.fetcher.get(data_id)
+        elif config.will_use_lmdb:
+            db_path = meta['db_path']
+            if db_path not in self.envs:
+                path = os.path.join(db_path, '')
+                env = lmdb.open(db_path, max_dbs=1, lock=False)
+                db_image = env.open_db('image'.encode())
+                self.envs.append(env)
+                self.txns[db_path] = env.begin(db=db_image)
+            item = self.txns[db_path].get(data_id)
+        else:
+            raise NotImplementedError
+        return item
+
     def __call__(self, data_id, meta):
-        item = self.convert(self.fetcher.get(data_id))
+        item = self.get_item(data_id, meta)
+        item = self.convert(item)
         image = item.pop('img').astype(np.float32)
         if self.meta_loader is not None:
             meta['extra'] = item

@@ -1,0 +1,59 @@
+import:
+    - 'experiments/base.yaml'
+package:
+    - 'decoders.seg_detector_loss'
+    - 'data.meta_loader'
+    - 'data.unpack_msgpack_data'
+define:
+  - name: meta_loader
+    class: DetectionMetaLoader
+    cache:
+        class: FileMetaCache
+    force_reload: false
+
+    # id meta loader is recommended to save memory
+  - name: id_meta_loader
+    class: DataIdMetaLoader
+    force_reload: false
+    cache:
+        class: FileMetaCache
+    return_dict: true
+
+  - name: train_data
+    class: LMDBDataset
+    meta_loader: ^id_meta_loader
+    lmdb_paths:
+        - '/data/text-spotter-data/MLT-2017/train'
+    unpack:
+        class: TransformMsgpackData
+    processes:
+        - class: AugmentDetectionData
+          augmenter_args:
+              - ['Fliplr', 0.5]
+              - {'cls': 'Affine', 'rotate': [-10, 10]}
+              - ['Resize', [0.5, 3.0]]
+        - class: RandomCropData
+          size: [640, 640]
+          max_tries: 10
+        - class: MakeICDARData
+        - class: MakeSegDetectionData
+        - class: MakeBorderMap
+        - class: NormalizeImage
+        - class: FilterKeys
+          superfluous: ['polygons', 'filename', 'shape', 'ignore_tags']
+
+  - name: validate_data
+    class: LMDBDataset
+    lmdb_paths:
+        - '/data/text-spotter-data/MLT-2017/validate'
+    meta_loader: ^id_meta_loader
+    unpack:
+        class: TransformMsgpackData
+    processes:
+        - class: AugmentDetectionData
+          augmenter_args:
+              - ['Resize', {'width': 1024, 'height': 576}]
+        - class: MakeICDARData
+        - class: MakeSegDetectionData
+        - class: MakeBorderMap
+        - class: NormalizeImage

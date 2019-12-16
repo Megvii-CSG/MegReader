@@ -11,3 +11,4 @@ from .l1_loss import MaskL1Loss
 from .balance_cross_entropy_loss import BalanceCrossEntropyLoss
 from .crnn import CRNNDecoder
 from .seg_recognizer import SegRecognizer
+from .seg_detector import SegDetector

@@ -10,6 +10,7 @@ class RecognitionMetaLoader(MetaLoader):
     case_sensitive = State(default=False)
     simplify = State(default=False)
     key = State(default='words')
+    scan_meta = True
 
     def __init__(self, key=None, cmd={}, **kwargs):
         super().__init__(cmd=cmd, **kwargs)

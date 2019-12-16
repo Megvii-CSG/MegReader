@@ -5,3 +5,4 @@ from .ctc_representer import CTCRepresenter
 from .ctc_representer2d import CTCRepresenter2D
 from .seg_recognition_representer import SegRecognitionRepresenter
 from .integral_regression_representer import IntegralRegressionRepresenter
+from .seg_detector_representer import SegDetectorRepresenter
