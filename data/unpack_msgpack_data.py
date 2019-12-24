@@ -2,7 +2,6 @@ import io
 
 import cv2
 import numpy as np
-import nori2 as nori
 import msgpack
 import config
 import os
